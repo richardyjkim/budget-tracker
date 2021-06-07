@@ -1,5 +1,3 @@
-const { cache } = require("webpack");
-
 const APP_PREFIX = 'BudgetTracker-';
 const VERSION = 'version_01';
 const CACHE_NAME = APP_PREFIX + VERSION;
@@ -20,6 +18,7 @@ const FILES_TO_CACHE = [
   "../icons/icon-512x512.png"
 ]
 
+// Cache resources
 self.addEventListener('install', function (e) {
   e.waitUntill(
     caches.open(CACHE_NAME).then(function (cache) {
@@ -29,14 +28,17 @@ self.addEventListener('install', function (e) {
   )
 });
 
+// Delete outdated caches
 self.addEventListener('activate', function (e) {
   e.waitUntill(
     caches.keys().then(function (keyList) {
       let cacheKeeplist = keyList.filter(function (key) {
+        // 'keyList' contains all cache names in github
+        // filter out ones that has this app prefix to create keeplist
         return key.indexOf(APP_PREFIX);
       });
       cacheKeeplist.push(CACHE_NAME);
-
+      // add current cache name to keeplist;
       return Promise.all(keyList.map(function (key, i) {
         if (cacheKeeplist.indexOf(key) === -1) {
           console.log('deleting cache : ' + keyList[i]);
@@ -46,3 +48,19 @@ self.addEventListener('activate', function (e) {
     })
   );
 });
+
+self.addEventListener('fetch', function (e) {
+  console.log('fetch request : ' + e.request.url)
+  e.respondWith(
+    catches.match(e.request).then(function (request) {
+      if (request) { // if cache is availavle, respond with cache
+        console.log('responding with cache : ' + e.request.url)
+        return request
+      } else { // if there are no cache, try fetching request
+        console.log('file is not cached, fetching : ' + e.request.url)
+        return fetch(e.request)
+      }
+    })
+
+  )
+})
